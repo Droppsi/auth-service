@@ -41,7 +41,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./AuthService
+          context: .
+          file: ./AuthService/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ vars.DOCKER_USERNAME }}/${{ github.event.repository.name }}:latest
