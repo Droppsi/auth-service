@@ -14,5 +14,9 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>().HasKey(x => x.Id);
+
+        modelBuilder.Entity<User>().Property(x => x.Username)
+            .HasMaxLength(255)
+            .IsRequired();
     }
 }
