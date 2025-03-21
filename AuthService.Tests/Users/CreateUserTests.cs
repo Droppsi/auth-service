@@ -4,6 +4,7 @@ using System.Text;
 using AuthService.Contract.Requests.Users;
 using AuthService.Models;
 using Bogus;
+using Shouldly;
 
 namespace AuthService.Tests.Users;
 
@@ -22,19 +23,19 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
 
         // Arrange
         CreateUserRequest? request = _fakeUserGenerator.Generate();
-        Assert.NotNull(request);
+        request.ShouldNotBeNull();
 
         // Act
         HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         RefreshDbContext();
         User? user = DbContext.Users.SingleOrDefault(u => u.Username == request.Username);
 
-        Assert.NotNull(user);
-        Assert.Equal(request.Username, user.Username);
+        user.ShouldNotBeNull();
+        user.Username.ShouldBe(request.Username);
     }
 
     [Fact]
@@ -49,9 +50,9 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
         HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         RefreshDbContext();
-        Assert.Empty(DbContext.Users);
+        DbContext.Users.ShouldNotBeNull().ShouldBeEmpty();
     }
 
     [Fact]
@@ -66,9 +67,9 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
         HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         RefreshDbContext();
-        Assert.Empty(DbContext.Users);
+        DbContext.Users.ShouldNotBeNull().ShouldBeEmpty();
     }
 
     [Fact]
@@ -83,9 +84,9 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
         HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         RefreshDbContext();
-        Assert.Empty(DbContext.Users);
+        DbContext.Users.ShouldNotBeNull().ShouldBeEmpty();
     }
 
     [Fact]
@@ -100,9 +101,9 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
         HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         RefreshDbContext();
-        Assert.Empty(DbContext.Users);
+        DbContext.Users.ShouldNotBeNull().ShouldBeEmpty();
     }
 
     [Fact]
@@ -126,9 +127,9 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
         HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         RefreshDbContext();
-        Assert.Single(DbContext.Users);
+        DbContext.Users.ShouldNotBeNull().ShouldNotBeEmpty();
     }
 
     // test if username is longer than 255 letters
@@ -151,8 +152,8 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
         HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         RefreshDbContext();
-        Assert.Empty(DbContext.Users);
+        DbContext.Users.ShouldNotBeNull().ShouldBeEmpty();
     }
 }
