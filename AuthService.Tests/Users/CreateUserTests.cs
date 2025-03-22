@@ -132,8 +132,6 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
         DbContext.Users.ShouldNotBeNull().ShouldNotBeEmpty();
     }
 
-    // test if username is longer than 255 letters
-
     [Fact]
     public async Task Should_Return_400_BadRequest_When_Creating_User_With_Username_Longer_Than_255_Letters()
     {

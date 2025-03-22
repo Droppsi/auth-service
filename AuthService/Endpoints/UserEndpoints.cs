@@ -42,5 +42,18 @@ public static class UserEndpoints
             await dbContext.SaveChangesAsync();
             return Results.Ok(user);
         });
+
+        endpoints.MapDelete("/api/users/{id:guid}", async (Guid id, [FromServices] AppDbContext dbContext) =>
+        {
+            User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null)
+            {
+                return Results.NotFound();
+            }
+
+            dbContext.Users.Remove(user);
+            await dbContext.SaveChangesAsync();
+            return Results.Ok();
+        });
     }
 }
