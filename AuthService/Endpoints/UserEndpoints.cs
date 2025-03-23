@@ -1,3 +1,4 @@
+using AuthService.Contract;
 using AuthService.Contract.Requests.Users;
 using AuthService.Infrastructure.Database;
 using AuthService.Models;
@@ -60,6 +61,13 @@ public static class UserEndpoints
             dbContext.Users.Remove(user);
             await dbContext.SaveChangesAsync();
             return Results.Ok();
+        });
+
+        endpoints.MapGet("/api/users/", async ([FromServices] AppDbContext dbContext) =>
+        {
+            var users = await dbContext.Users.ToListAsync();
+
+            return Results.Ok(users.MapToResponse());
         });
     }
 }
