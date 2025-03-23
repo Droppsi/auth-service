@@ -40,8 +40,12 @@ public class UpdateUserPasswordTests(CustomWebAppFactory factory) : BaseIntegrat
             .ShouldBeTrue("Password should be hashed and verified");
     }
 
-    [Fact]
-    public async Task Should_Return_400_BadRequest_When_Changing_Password_Of_Existing_User_To_Empty_String()
+    [Theory]
+    [InlineData("")] // Empty string
+    [InlineData(" ")] // Whitespace
+    [InlineData(null)] // Null
+    public async Task Should_Return_400_BadRequest_When_Changing_Password_Of_Existing_User_To_Invalid_Input(
+        string? password)
     {
         ClearDb();
 
@@ -55,7 +59,7 @@ public class UpdateUserPasswordTests(CustomWebAppFactory factory) : BaseIntegrat
         DbContext.Users.Add(user);
         await DbContext.SaveChangesAsync();
 
-        UpdateUserPasswordRequest request = new("");
+        UpdateUserPasswordRequest request = new(password!);
 
         // Act
         HttpResponseMessage response = await Client.PutAsJsonAsync($"/api/users/{user.Id}/password", request);
@@ -85,65 +89,6 @@ public class UpdateUserPasswordTests(CustomWebAppFactory factory) : BaseIntegrat
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         RefreshDbContext();
         DbContext.Users.ShouldNotBeNull().ShouldBeEmpty();
-    }
-
-    [Fact]
-    public async Task Should_Return_400_BadRequest_When_Changing_Password_Of_Existing_User_To_Null()
-    {
-        ClearDb();
-
-        // Arrange
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
-            Username = "Username",
-            Password = "<PASSWORD>"
-        };
-        DbContext.Users.Add(user);
-        await DbContext.SaveChangesAsync();
-
-        UpdateUserPasswordRequest request = new(null!);
-
-        // Act
-        HttpResponseMessage response = await Client.PutAsJsonAsync($"/api/users/{user.Id}/password", request);
-
-        // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        RefreshDbContext();
-        User? updatedUser = DbContext.Users.SingleOrDefault(u => u.Id == user.Id);
-        updatedUser.ShouldNotBeNull();
-        updatedUser.Username.ShouldBe("Username");
-        updatedUser.Password.ShouldBe(user.Password);
-        updatedUser.Id.ShouldBe(user.Id);
-    }
-
-    [Fact]
-    public async Task Should_Return_400_BadRequest_When_Changing_Password_Of_Existing_User_To_Empty_String_With_Whitespace()
-    {
-        ClearDb();
-
-        // Arrange
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
-            Username = "Username",
-        };
-        DbContext.Users.Add(user);
-        await DbContext.SaveChangesAsync();
-
-        UpdateUserPasswordRequest request = new("   ");
-
-        // Act
-        HttpResponseMessage response = await Client.PutAsJsonAsync($"/api/users/{user.Id}/password", request);
-
-        // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        RefreshDbContext();
-        User? updatedUser = DbContext.Users.SingleOrDefault(u => u.Id == user.Id);
-        updatedUser.ShouldNotBeNull();
-        updatedUser.Username.ShouldBe("Username");
-        updatedUser.Password.ShouldBe(user.Password);
-        updatedUser.Id.ShouldBe(user.Id);
     }
 
     [Fact]

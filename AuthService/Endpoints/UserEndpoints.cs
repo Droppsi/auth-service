@@ -53,7 +53,7 @@ public static class UserEndpoints
         endpoints.MapDelete("/api/users/{id:guid}", async (Guid id, [FromServices] AppDbContext dbContext) =>
         {
             User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
-            if (user == null)
+            if (user is null)
             {
                 return Results.NotFound();
             }
@@ -70,11 +70,19 @@ public static class UserEndpoints
             return Results.Ok(users.MapToResponse());
         });
 
+        endpoints.MapGet("/api/users/{id:guid}", async (Guid id, [FromServices] AppDbContext dbContext) =>
+        {
+            User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+            return user is null
+                ? Results.NotFound()
+                : Results.Ok(user.MapToResponse());
+        });
+
         endpoints.MapPut("/api/users/{id:guid}",
             async ([FromRoute] Guid id, UpdateUserRequest request, [FromServices] AppDbContext dbContext) =>
             {
                 User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
-                if (user == null)
+                if (user is null)
                 {
                     return Results.NotFound();
                 }
@@ -94,7 +102,7 @@ public static class UserEndpoints
             async ([FromRoute] Guid id, UpdateUserPasswordRequest request, [FromServices] AppDbContext dbContext) =>
             {
                 User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
-                if (user == null)
+                if (user is null)
                 {
                     return Results.NotFound();
                 }
