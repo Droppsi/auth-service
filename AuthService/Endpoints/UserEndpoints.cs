@@ -69,5 +69,50 @@ public static class UserEndpoints
 
             return Results.Ok(users.MapToResponse());
         });
+
+        endpoints.MapPut("/api/users/{id:guid}",
+            async ([FromRoute] Guid id, UpdateUserRequest request, [FromServices] AppDbContext dbContext) =>
+            {
+                User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+                if (user == null)
+                {
+                    return Results.NotFound();
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Username))
+                {
+                    return Results.BadRequest();
+                }
+
+                user.Username = request.Username;
+                await dbContext.SaveChangesAsync();
+                return Results.Ok(user.MapToResponse());
+            }
+        );
+
+        endpoints.MapPut("/api/users/{id:guid}/password",
+            async ([FromRoute] Guid id, UpdateUserPasswordRequest request, [FromServices] AppDbContext dbContext) =>
+            {
+                User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+                if (user == null)
+                {
+                    return Results.NotFound();
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return Results.BadRequest();
+                }
+
+                if (request.Password.Length > 512)
+                {
+                    return Results.BadRequest();
+                }
+
+                user.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(request.Password);
+                await dbContext.SaveChangesAsync();
+                return Results.Ok(user.MapToResponse());
+            }
+        );
     }
 }
