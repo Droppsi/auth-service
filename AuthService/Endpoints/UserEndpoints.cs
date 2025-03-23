@@ -27,6 +27,11 @@ public static class UserEndpoints
                 return Results.BadRequest();
             }
 
+            if (request.Password.Length > 512)
+            {
+                return Results.BadRequest();
+            }
+
             if (await dbContext.Users.AnyAsync(u => u.Username == request.Username))
             {
                 return Results.BadRequest();
@@ -35,6 +40,7 @@ public static class UserEndpoints
             var user = new User
             {
                 Username = request.Username,
+                Password = BCrypt.Net.BCrypt.EnhancedHashPassword(request.Password),
                 Id = Guid.NewGuid()
             };
 

@@ -36,6 +36,10 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
 
         user.ShouldNotBeNull();
         user.Username.ShouldBe(request.Username);
+        user.Password.ShouldNotBeNullOrEmpty();
+        user.Password.ShouldNotBe(request.Password);
+        BCrypt.Net.BCrypt.EnhancedVerify(request.Password, user.Password)
+            .ShouldBeTrue("Password should be hashed and verified");
     }
 
     [Fact]
@@ -145,6 +149,29 @@ public class CreateUserTests(CustomWebAppFactory factory) : BaseIntegrationTest(
         }
 
         var request = new CreateUserRequest(stringBuilder.ToString(), "Password");
+
+        // Act
+        HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        RefreshDbContext();
+        DbContext.Users.ShouldNotBeNull().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Should_Return_400_BadRequest_When_Creating_User_With_Password_Longer_Than_512_Letters()
+    {
+        ClearDb();
+
+        // Arrange
+        var stringBuilder = new StringBuilder();
+        for (var i = 0; i < 513; i++)
+        {
+            stringBuilder.Append('a');
+        }
+
+        var request = new CreateUserRequest("Username", stringBuilder.ToString());
 
         // Act
         HttpResponseMessage response = await Client.PostAsJsonAsync("/api/users", request);
