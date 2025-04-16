@@ -1,9 +1,15 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using AuthService.Contract;
 using AuthService.Contract.Requests.Users;
+using AuthService.Contract.Responses.Users;
 using AuthService.Infrastructure.Database;
 using AuthService.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace AuthService.Endpoints;
 
@@ -120,6 +126,82 @@ public static class UserEndpoints
                 user.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(request.Password);
                 await dbContext.SaveChangesAsync();
                 return Results.Ok(user.MapToResponse());
+            }
+        );
+
+        endpoints.MapPost("/api/users/login",
+            async (LoginUserRequest request, [FromServices] AppDbContext dbContext,
+                [FromServices] IConfiguration configuration) =>
+            {
+                User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+                if (user is null)
+                {
+                    return Results.NotFound();
+                }
+
+                if (!BCrypt.Net.BCrypt.EnhancedVerify(request.Password, user.Password))
+                {
+                    return Results.Unauthorized();
+                }
+
+                var configKey = configuration.GetValue<string>("Jwt:Key");
+
+                if (string.IsNullOrWhiteSpace(configKey))
+                {
+                    return Results.InternalServerError();
+                }
+
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configKey));
+                var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+                var claims = new List<Claim>()
+                {
+                    new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new(ClaimTypes.NameIdentifier, user.Id.ToString())
+                };
+
+                var audience = configuration.GetValue<string>("Jwt:Audience");
+                var issuer = configuration.GetValue<string>("Jwt:Issuer");
+                var expires = configuration.GetValue<int?>("Jwt:ExpiresInSeconds");
+
+                if (string.IsNullOrWhiteSpace(audience))
+                {
+                    return Results.InternalServerError();
+                }
+
+                if (string.IsNullOrWhiteSpace(issuer))
+                {
+                    return Results.InternalServerError();
+                }
+
+                if (expires is null or <= 0)
+                {
+                    return Results.InternalServerError();
+                }
+
+                var token = new JwtSecurityToken(
+                    issuer: issuer,
+                    audience: audience,
+                    claims: claims,
+                    notBefore: DateTime.UtcNow,
+                    expires: DateTime.UtcNow.AddSeconds(expires.Value),
+                    signingCredentials: credentials
+                );
+
+                string? tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+                if (string.IsNullOrWhiteSpace(tokenString))
+                {
+                    return Results.InternalServerError();
+                }
+
+                var refreshToken = Guid.NewGuid().ToString();
+
+                user.RefreshToken = refreshToken;
+                dbContext.Users.Update(user);
+                await dbContext.SaveChangesAsync();
+
+                return Results.Ok(new LoginResponse(tokenString, refreshToken));
             }
         );
     }
