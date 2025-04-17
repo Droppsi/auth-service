@@ -18,5 +18,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>().Property(x => x.Username)
             .HasMaxLength(255)
             .IsRequired();
+
+        modelBuilder.Entity<User>().Property(x => x.Password)
+            .HasMaxLength(72)
+            .IsRequired();
+
+        modelBuilder.Entity<User>().Property(x => x.RefreshToken)
+            .HasMaxLength(255)
+            .IsRequired(false);
     }
 }
